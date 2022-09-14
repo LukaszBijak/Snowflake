@@ -1,0 +1,22 @@
+CREATE DATABASE exercise_db;
+
+CREATE TABLE CUSTOMERS 
+(
+   ID INTEGER NOT NULL, 
+   FIRST_NAME VARCHAR, 
+   LAST_NAME VARCHAR, 
+   EMAIL VARCHAR, 
+   AGE INTEGER, 
+   CITY VARCHAR);
+
+CREATE OR REPLACE STAGE test_stage
+    url='s3://snowflake-assignments-mc/loadingdata/';
+
+DESC STAGE test_stage;
+
+LIST @test_stage;
+
+COPY INTO CUSTOMERS
+    FROM @test_stage
+    file_format = (type = csv field_delimiter=';' skip_header=1)
+    files = ('customers2.csv', 'customers3.csv');
