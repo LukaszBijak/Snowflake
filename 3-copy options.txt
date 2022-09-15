@@ -1,0 +1,24 @@
+-- Assigment Section 5 "Copy options"
+
+-- create stage
+CREATE OR REPLACE STAGE my_stage
+    url='s3://snowflake-assignments-mc/fileformat/';
+   
+LIST @"EXERCISE_DB"."PUBLIC".my_stage;
+
+-- create file format object
+    -- create shema to keep organized
+    CREATE SCHEMA file_formats;
+CREATE FILE FORMAT file_formats.default_csv;
+
+-- set my parameters:
+ALTER FILE FORMAT file_formats.default_csv 
+    SET FIELD_DELIMITER='|' SKIP_HEADER=1;
+
+DESC FILE FORMAT file_formats.default_csv;
+
+-- loading data:
+COPY INTO "EXERCISE_DB"."PUBLIC"."CUSTOMERS" 
+    FROM @"EXERCISE_DB"."PUBLIC".my_stage
+    file_format = (FORMAT_NAME=file_formats.default_csv)
+    files = ('customers4.csv');
