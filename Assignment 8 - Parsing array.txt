@@ -1,0 +1,19 @@
+-- Assignmet 8
+
+CREATE OR REPLACE TABLE skills(
+   first_name VARCHAR(50),
+   last_name VARCHAR(50),
+   skills_1 VARCHAR(50),
+   skills_2 VARCHAR(50)  
+);
+
+INSERT INTO skills
+SELECT 
+    RAW:first_name AS first_name,
+    RAW:last_name"MANAGE_DB"."PUBLIC"."SKILLS" AS last_name,
+    RAW:Skills[0] AS skills_1,
+    RAW:Skills[1] AS skills_2
+FROM JSON_RAW;
+
+SELECT * FROM skills
+WHERE FIRST_NAME = 'Florina';
