@@ -1,0 +1,59 @@
+select GRADER(step, (actual = expected), actual, expected, description) as graded_results from ( 
+     SELECT 'DWW14' as step 
+     ,(select count(*) 
+       from GARDEN_PLANTS.INFORMATION_SCHEMA.FILE_FORMATS 
+       where FILE_FORMAT_NAME='L8_CHALLENGE_FF' 
+       and FIELD_DELIMITER = '\t') as actual 
+     , 1 as expected 
+     ,'Challenge File Format Created' as description  
+); 
+
+use database DEMO_DB;
+use schema PUBLIC;
+
+use database garden_plants;
+use schema veggies;
+
+create or replace table vegetable_details_soil_type
+( plant_name varchar(25)
+ ,soil_type number(1,0)
+);
+
+copy into vegetable_details_soil_type
+from @like_a_window_into_an_s3_bucket
+files = ( 'VEG_NAME_TO_SOIL_TYPE_PIPE.txt')
+file_format = ( format_name=PIPECOLSEP_ONEHEADROW );
+
+select GRADER(step, (actual = expected), actual, expected, description) as graded_results from (
+  SELECT 'DWW11' as step
+  ,(select row_count 
+    from GARDEN_PLANTS.INFORMATION_SCHEMA.TABLES 
+    where table_name = 'VEGETABLE_DETAILS_SOIL_TYPE') as actual
+  , 42 as expected
+  , 'Veg Det Soil Type Count' as description
+ ); 
+ 
+ create or replace table LU_SOIL_TYPE(
+SOIL_TYPE_ID number,	
+SOIL_TYPE varchar(15),
+SOIL_DESCRIPTION varchar(75)
+ );
+ 
+ COPY INTO LU_SOIL_TYPE
+ FROM @LIKE_A_WINDOW_INTO_AN_S3_BUCKET
+ FILE_FORMAT = "GARDEN_PLANTS"."VEGGIES"."L8_CHALLENGE_FF"
+ FILES = ('LU_SOIL_TYPE.tsv');
+ 
+ CREATE OR REPLACE TABLE VEGETABLE_DETAILS_PLANT_HEIGHT (
+   plant_name VARCHAR(30),
+   UOM VARCHAR(2),
+   Low_End_of_Range INT,
+   High_End_of_Range INT
+ );
+ 
+ COPY INTO VEGETABLE_DETAILS_PLANT_HEIGHT
+ FROM @LIKE_A_WINDOW_INTO_AN_S3_BUCKET
+ FILE_FORMAT = "COMMASEP_DBLQOUT_ONEHEADROW"
+ FILES = ('veg_plant_height.csv');
+ 
+ 
