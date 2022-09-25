@@ -1,0 +1,89 @@
+// INTEGRATION OBJECT IN AMAZON WEB S3
+
+create or replace storage integration s3_int
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = S3
+  ENABLED = TRUE 
+  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::056805788137:role/snowflake-access-role'
+  STORAGE_ALLOWED_LOCATIONS = ('s3://snowflakes3bucketlb/csv/', 's3://snowflakes3bucketlb/json/')
+   COMMENT = 'This an optional comment';
+  DESC integration s3_int;
+  
+  CREATE OR REPLACE TABLE FIRST_DB.PUBLIC.movie_titles (
+  show_id STRING,
+  type STRING,
+  title STRING,
+  director STRING,
+  cast STRING,
+  country STRING,
+  date_added STRING,
+  release_year STRING,
+  rating STRING,
+  duration STRING,
+  listed_in STRING,
+  description STRING );
+  
+  CREATE OR REPLACE file format MANAGE_DB.file_formats.csv_fileformat
+    type = csv
+    field_delimiter = ','
+    skip_header = 1
+    null_if = ('NULL','null')
+    empty_field_as_null = TRUE;
+    
+ CREATE OR REPLACE stage MANAGE_DB.external_stages.csv_folder
+    URL = 's3://snowflakes3bucketlb/csv/'
+    STORAGE_INTEGRATION = s3_int
+    FILE_FORMAT = MANAGE_DB.file_formats.csv_fileformat;
+    
+COPY INTO FIRST_DB.PUBLIC.movie_titles
+    FROM @MANAGE_DB.external_stages.csv_folder;
+    
+ SELECT * FROM "FIRST_DB"."PUBLIC"."MOVIE_TITLES"
+ WHERE COUNTRY = 'Poland' AND TYPE = 'Movie'
+ ORDER BY DATE_ADDED 
+ LIMIT 5;
+ 
+ 
+ // JSON FILES 
+ 
+ CREATE FILE FORMAT "MANAGE_DB"."FILE_FORMATS".JSONFILEFORMAT
+    TYPE = JSON;
+ 
+ CREATE OR REPLACE stage MANAGE_DB.external_stages.json_folder
+    URL = 's3://snowflakes3bucketlb/json/'
+    STORAGE_INTEGRATION = s3_int
+    FILE_FORMAT = MANAGE_DB.file_formats.JSONFILEFORMAT;
+
+ 
+SELECT * FROM @MANAGE_DB.external_stages.json_folder;
+
+SELECT 
+$1:asin,
+$1:helpful,
+$1:overall,
+$1:reviewText,
+$1:reviewTime,
+$1:reviewerID,
+$1:reviewTime,
+$1:reviewerName,
+$1:summary,
+$1:unixReviewTime
+FROM @MANAGE_DB.external_stages.json_folder;
+
+SELECT 
+$1:asin::STRING as ASIN,
+$1:helpful as helpful,
+$1:overall as overall,
+$1:reviewText::STRING as reviewtext,
+DATE_FROM_PARTS( 
+  RIGHT($1:reviewTime::STRING,4), 
+  LEFT($1:reviewTime::STRING,2), 
+  CASE WHEN SUBSTRING($1:reviewTime::STRING,5,1)=',' 
+    THEN SUBSTRING($1:reviewTime::STRING,4,1)
+    ELSE SUBSTRING($1:reviewTime::STRING,4,2) END ),
+$1:reviewerID::STRING,
+$1:reviewTime::STRING,
+$1:reviewerName::STRING,
+$1:summary::STRING,
+DATE($1:unixReviewTime::int) as unixRevewtime
+FROM @MANAGE_DB.external_stages.json_folder;
